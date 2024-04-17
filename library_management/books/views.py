@@ -1,4 +1,5 @@
 from rest_framework.decorators import api_view
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -52,14 +53,48 @@ class BookDetailApiView(APIView):
             return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 
-class BookDeleteApiView(generics.DestroyAPIView):
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
+# class BookDeleteApiView(generics.DestroyAPIView):
+#     queryset = Book.objects.all()
+#     serializer_class = BookSerializer
+
+class BookDeleteApiView(APIView):
+    def delete(self, request, pk):
+        try:
+            book = Book.objects.get(id=pk)
+            book.delete()
+            data = {
+                "status": "success",
+                "code": 204,
+                "message": "Book deleted successfully",
+            }
+            return Response(data, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            data = {
+                "status": "error",
+                "code": 404,
+                "message": "Book not found",
+            }
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
 
 
-class BookUpdateApiView(generics.UpdateAPIView):
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
+# class BookUpdateApiView(generics.UpdateAPIView):
+#     queryset = Book.objects.all()
+#     serializer_class = BookSerializer
+
+class BookUpdateApiView(APIView):
+    def put(self, request, pk):
+        book = get_object_or_404(Book.objects.all(), id=pk)
+        data = request.data
+        serializer = BookSerializer(instance=book, data=data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            book_saved = serializer.save()
+            data = {
+                "status": "success",
+                "code": 200,
+                "message": f"Book '{book_saved.title}' updated successfully",
+                "book": serializer.data,
+            }
+            return Response(data)
 
 
 # class BookCreateApiView(generics.CreateAPIView):
